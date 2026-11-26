@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
 const rateLimit = require('express-rate-limit');
 
 const {
@@ -13,20 +13,32 @@ const {
 
 const authenticate = require('../middleware/authenticate');
 
-// Rate limiter for auth routes — 10 requests per minute per IP
-const authLimiter = rateLimit({
+// General limiter — 20 requests per minute per IP
+// Covers register, send-otp, resend-otp
+const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: 20,
   message: { message: 'Too many requests. Please wait a moment and try again.' },
   standardHeaders: true,
-  legacyHeaders: false,
+  legacyHeaders:   false,
 });
 
-router.post('/register',    authLimiter, register);
-router.post('/send-otp',    authLimiter, sendLoginOtp);
-router.post('/verify-otp',  authLimiter, verifyOtpHandler);
-router.post('/resend-otp',  authLimiter, resendOtp);
-router.post('/logout',      authenticate, logout);
-router.get('/me',           authenticate, getMe);
+// Strict limiter for OTP verification — 10 per minute
+// This is the endpoint that enforces the 5-attempt lockout.
+// Keeping it separate means the general endpoints won't consume this budget.
+const verifyLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { message: 'Too many verification attempts. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders:   false,
+});
+
+router.post('/register',   generalLimiter, register);
+router.post('/send-otp',   generalLimiter, sendLoginOtp);
+router.post('/verify-otp', verifyLimiter,  verifyOtpHandler);
+router.post('/resend-otp', generalLimiter, resendOtp);
+router.post('/logout',     authenticate,   logout);
+router.get('/me',          authenticate,   getMe);
 
 module.exports = router;

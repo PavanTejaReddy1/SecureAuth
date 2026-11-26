@@ -8,60 +8,90 @@ import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
 import { maskIdentifier } from '../utils/validators';
 
-const RESEND_COOLDOWN = 60;
+const RESEND_COOLDOWN = 60; // seconds
 const IS_DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
 
 export default function OtpPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate   = useNavigate();
+  const location   = useLocation();
   const { setUser } = useAuth();
 
+  // The login/register page passes these in navigation state
   const { identifier, identifierType, purpose } = location.state || {};
 
-  const [otp, setOtp] = useState('');
-  const [demoOtp, setDemoOtp] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [otp, setOtp]               = useState('');
+  // demoOtp can come from navigation state (send-otp response) or from resend
+  const [demoOtp, setDemoOtp]       = useState(location.state?.demoOtp || '');
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+  const [success, setSuccess]       = useState('');
   const [hasOtpError, setHasOtpError] = useState(false);
-  const [countdown, setCountdown] = useState(RESEND_COOLDOWN);
-  const [resending, setResending] = useState(false);
+  const [countdown, setCountdown]   = useState(RESEND_COOLDOWN);
+  const [resending, setResending]   = useState(false);
 
-  useEffect(() => { if (!identifier) navigate('/login'); }, [identifier, navigate]);
+  // Redirect to login if no identifier was passed
+  useEffect(() => {
+    if (!identifier) navigate('/login');
+  }, [identifier, navigate]);
 
+  // Countdown timer for the resend button
   useEffect(() => {
     if (countdown <= 0) return;
     const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  useEffect(() => { if (otp.length === 6) handleVerify(); }, [otp]);
+  // Auto-submit when all 6 digits are filled
+  useEffect(() => {
+    if (otp.length === 6) handleVerify();
+  }, [otp]);
 
   async function handleVerify() {
     if (otp.length !== 6) { setError('Please enter all 6 digits.'); return; }
-    setLoading(true); setError(''); setHasOtpError(false);
+
+    setLoading(true);
+    setError('');
+    setHasOtpError(false);
+
     try {
       const data = await authService.verifyOtp({ identifier, otp, purpose });
       setSuccess('Verified successfully!');
       setUser(data.user);
       setTimeout(() => navigate('/dashboard'), 600);
     } catch (err) {
-      setError(err.message); setHasOtpError(true); setOtp('');
-    } finally { setLoading(false); }
+      // If the account was just locked, redirect to the locked page with the unlock time
+      if (err.lockedUntil || (err.message && err.message.toLowerCase().includes('locked'))) {
+        navigate('/locked', { state: { unlockAt: err.lockedUntil || null } });
+        return;
+      }
+      setError(err.message);
+      setHasOtpError(true);
+      setOtp('');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleResend() {
     if (countdown > 0) return;
-    setResending(true); setError(''); setDemoOtp('');
+
+    setResending(true);
+    setError('');
+    setDemoOtp('');
+
     try {
       const data = await authService.resendOtp({ identifier, purpose });
       setCountdown(RESEND_COOLDOWN);
-      if (IS_DEMO && data.demoOtp) setDemoOtp(data.demoOtp);
-    } catch (err) { setError(err.message); }
-    finally { setResending(false); }
+      if (data.demoOtp) setDemoOtp(data.demoOtp);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setResending(false);
+    }
   }
 
-  const maskedId = identifier ? maskIdentifier(identifier) : '';
+
+  const maskedId     = identifier ? maskIdentifier(identifier) : '';
   const channelLabel = identifierType === 'email' ? 'email' : 'phone';
 
   return (
@@ -72,7 +102,6 @@ export default function OtpPage() {
           <Link to="/"><Logo size="md" /></Link>
         </div>
 
-        {/* White card */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-8">
 
           <div className="text-center mb-8">
@@ -98,10 +127,15 @@ export default function OtpPage() {
             />
           </div>
 
-          {error && <Alert type="error" message={error} />}
+          {error   && <Alert type="error"   message={error} />}
           {success && <Alert type="success" message={success} />}
 
-          <Button onClick={handleVerify} loading={loading} disabled={otp.length !== 6} className="mt-5">
+          <Button
+            onClick={handleVerify}
+            loading={loading}
+            disabled={otp.length !== 6}
+            className="mt-5"
+          >
             Verify code
           </Button>
 
@@ -121,13 +155,22 @@ export default function OtpPage() {
             )}
           </div>
 
+          {/* Demo mode panel — only shown when VITE_DEMO_MODE=true */}
           {IS_DEMO && (
-            <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-gray-200">
-              <p className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-widest">Demo mode</p>
-              <p className="text-xs text-gray-400 mb-2">No real messages sent. OTP shown for evaluation.</p>
-              {demoOtp && (
-                <p className="text-3xl font-mono font-bold text-gray-900 tracking-[0.3em] text-center py-1">
+            <div className="mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
+              <p className="text-xs font-bold text-amber-700 mb-1 uppercase tracking-widest">
+                Demo mode — evaluation only
+              </p>
+              <p className="text-xs text-amber-600 mb-3">
+                No real messages are sent. The actual OTP code is shown below.
+              </p>
+              {demoOtp ? (
+                <p className="text-3xl font-mono font-bold text-amber-900 tracking-[0.3em] text-center py-1">
                   {demoOtp}
+                </p>
+              ) : (
+                <p className="text-xs text-amber-500 text-center italic">
+                  OTP will appear here after you request one.
                 </p>
               )}
             </div>
@@ -137,8 +180,11 @@ export default function OtpPage() {
 
         <p className="text-center text-sm text-gray-400 mt-5">
           Wrong details?{' '}
-          <Link to="/register" className="text-gray-700 font-medium hover:underline">Go back</Link>
+          <Link to={purpose === 'registration' ? '/register' : '/login'} className="text-gray-700 font-medium hover:underline">
+            Go back
+          </Link>
         </p>
+
       </div>
     </div>
   );

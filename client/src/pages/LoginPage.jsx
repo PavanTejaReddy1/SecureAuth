@@ -6,7 +6,7 @@ import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 import { getIdentifierType } from '../utils/validators';
 import { authService } from '../services/api';
-import { Fingerprint } from 'lucide-react';
+import { Fingerprint, MonitorSmartphone } from 'lucide-react';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -15,29 +15,47 @@ export default function LoginPage() {
   const [identifierError, setIdentifierError] = useState('');
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Show a specific warning when the account is active on another device
+  const [activeOnOtherDevice, setActiveOnOtherDevice] = useState(false);
 
   function handleChange(value) {
     setIdentifier(value);
     setIdentifierError('');
     setServerError('');
+    setActiveOnOtherDevice(false);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+
     const identifierType = getIdentifierType(identifier.trim());
     if (!identifierType) {
       setIdentifierError('Please enter a valid email address or phone number.');
       return;
     }
+
     setLoading(true);
     setServerError('');
+    setActiveOnOtherDevice(false);
+
     try {
-      await authService.sendOtp({ identifier: identifier.trim() });
+      const data = await authService.sendOtp({ identifier: identifier.trim() });
+
       navigate('/verify-otp', {
-        state: { identifier: identifier.trim(), identifierType, purpose: 'login' },
+        state: {
+          identifier:     identifier.trim(),
+          identifierType,
+          purpose:        'login',
+          demoOtp:        data.demoOtp || null,
+        },
       });
     } catch (err) {
-      setServerError(err.message);
+      // The backend sends alreadyActive:true when the account has an open session
+      if (err.message && err.message.includes('already active on another device')) {
+        setActiveOnOtherDevice(true);
+      } else {
+        setServerError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -55,7 +73,6 @@ export default function LoginPage() {
           <Link to="/"><Logo size="md" /></Link>
         </div>
 
-        {/* White card */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-8">
 
           <div className="mb-6">
@@ -74,7 +91,22 @@ export default function LoginPage() {
               autoFocus
               autoComplete="email"
             />
+
             {serverError && <Alert type="error" message={serverError} />}
+
+            {/* Specific message for active-on-another-device scenario */}
+            {activeOnOtherDevice && (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                <MonitorSmartphone size={18} className="text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800 mb-0.5">Already signed in elsewhere</p>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    Your account is active on another device. Sign out from that device first, then try again.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <Button type="submit" loading={loading}>
               Continue with OTP
             </Button>

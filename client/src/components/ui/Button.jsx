@@ -6,7 +6,7 @@ export default function Button({
   className = '',
   ...props
 }) {
-  const base = 'w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed';
+  const base = 'w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-150 disabled:opacity-40 cursor-pointer';
 
   const variants = {
     primary:   'bg-gray-900 hover:bg-black active:scale-[0.98] text-white shadow-sm',
