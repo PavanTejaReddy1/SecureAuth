@@ -1,13 +1,20 @@
 import axios from 'axios';
 
+// In development, VITE_API_URL is not set so requests go to /api
+// and the Vite proxy forwards them to localhost:5000.
+// In production (Vercel), VITE_API_URL is set to the deployed backend URL.
+const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api';
+
 const api = axios.create({
-  baseURL: '/api',
-  withCredentials: true,  // sends HTTP-only session cookies automatically
+  baseURL: BASE_URL,
+  withCredentials: true,  // sends the HTTP-only session cookie with every request
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
 });
 
-// Unwrap the data on success, build a readable error on failure
+// Pull a readable message out of any error response
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -17,14 +24,12 @@ api.interceptors.response.use(
     if (error.response && error.response.data) {
       const data = error.response.data;
       message   = data.message || data.error || message;
-      // Preserve extra fields like lockedUntil, alreadyActive, attemptsRemaining
       extraData = { ...data };
       delete extraData.message;
     } else if (error.message) {
       message = error.message;
     }
 
-    // Attach the extra fields to the error so callers can inspect them
     const err = new Error(message);
     Object.assign(err, extraData);
     return Promise.reject(err);
