@@ -43,13 +43,21 @@ export default function RegisterPage() {
     setServerError('');
     try {
       const identifierType = getIdentifierType(form.identifier);
-      await authService.register({
+
+      // Capture the response so we can pass demoOtp to the OTP page
+      const data = await authService.register({
         surname: form.surname.trim(),
         [identifierType]: form.identifier.trim(),
         dob: form.dob,
       });
+
       navigate('/verify-otp', {
-        state: { identifier: form.identifier.trim(), identifierType, purpose: 'registration' },
+        state: {
+          identifier:     form.identifier.trim(),
+          identifierType,
+          purpose:        'registration',
+          demoOtp:        data.demoOtp || null,
+        },
       });
     } catch (err) {
       setServerError(err.message);

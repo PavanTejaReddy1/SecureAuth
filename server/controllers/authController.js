@@ -1,13 +1,13 @@
 const User = require('../models/User');
 const { generateOtp, hashOtp, verifyOtp, getOtpExpiry } = require('../utils/otp');
 const { generateSessionId, signToken, setSessionCookie, clearSessionCookie } = require('../utils/session');
-const { deliverOtp, isDemoMode } = require('../services/otpDelivery');
+const { deliverOtp } = require('../services/otpDelivery');
 
-const MAX_ATTEMPTS     = parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10);
-const LOCKOUT_MINUTES  = parseInt(process.env.LOCKOUT_DURATION_MINUTES || '60', 10);
-const RESEND_COOLDOWN  = 60; // seconds — user must wait this long before requesting another OTP
+const MAX_ATTEMPTS    = parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10);
+const LOCKOUT_MINUTES = parseInt(process.env.LOCKOUT_DURATION_MINUTES || '60', 10);
+const RESEND_COOLDOWN = 60; // seconds
 
-// ─── POST /api/auth/register ─────────────────────────────────────────────────
+// ─── POST /api/auth/register ──────────────────────────────────────────────────
 async function register(req, res) {
   const { surname, email, phone, dob } = req.body;
 
@@ -15,34 +15,39 @@ async function register(req, res) {
     return res.status(400).json({ message: 'Please provide surname, email or phone, and date of birth.' });
   }
 
-  // Basic server-side format check
   if (email && !email.includes('@')) {
     return res.status(400).json({ message: 'Please provide a valid email address.' });
   }
 
-  // Check for duplicate registration before creating anything
+  // Prevent duplicate registrations
   if (email) {
     const existing = await User.findOne({ email: email.toLowerCase().trim() });
-    if (existing) {
+    if (existing && existing.isVerified) {
       return res.status(409).json({ message: 'An account with this email already exists.' });
+    }
+    // If existing but unverified (incomplete earlier registration), delete and re-register
+    if (existing && !existing.isVerified) {
+      await User.deleteOne({ _id: existing._id });
     }
   }
 
   if (phone) {
     const existing = await User.findOne({ phone: phone.trim() });
-    if (existing) {
+    if (existing && existing.isVerified) {
       return res.status(409).json({ message: 'An account with this phone number already exists.' });
+    }
+    if (existing && !existing.isVerified) {
+      await User.deleteOne({ _id: existing._id });
     }
   }
 
-  // Create the user record — not verified until OTP is confirmed
   const otp = generateOtp();
 
   const user = new User({
-    surname: surname.trim(),
-    email:   email ? email.toLowerCase().trim() : undefined,
-    phone:   phone ? phone.trim() : undefined,
-    dob:     new Date(dob),
+    surname:     surname.trim(),
+    email:       email ? email.toLowerCase().trim() : undefined,
+    phone:       phone ? phone.trim() : undefined,
+    dob:         new Date(dob),
     isVerified:  false,
     otpHash:     await hashOtp(otp),
     otpExpiry:   getOtpExpiry(),
@@ -53,8 +58,7 @@ async function register(req, res) {
 
   const identifier = email || phone;
   const channel    = email ? 'email' : 'phone';
-
-  const delivery = await deliverOtp(identifier, otp, channel);
+  const delivery   = await deliverOtp(identifier, otp, channel);
 
   const response = { message: 'Account created. Please verify your contact details.' };
   if (delivery.demoOtp) response.demoOtp = delivery.demoOtp;
@@ -62,8 +66,7 @@ async function register(req, res) {
   return res.status(201).json(response);
 }
 
-// ─── POST /api/auth/send-otp ─────────────────────────────────────────────────
-// Called at login — sends an OTP to an existing registered user.
+// ─── POST /api/auth/send-otp ──────────────────────────────────────────────────
 async function sendLoginOtp(req, res) {
   const { identifier } = req.body;
 
@@ -73,12 +76,11 @@ async function sendLoginOtp(req, res) {
 
   const user = await findUserByIdentifier(identifier);
 
-  if (!user) {
-    // Don't reveal whether the account exists — always respond the same way
+  if (!user || !user.isVerified) {
+    // Don't reveal whether the account exists
     return res.status(200).json({ message: 'If an account exists, a verification code has been sent.' });
   }
 
-  // Reject the OTP request if the account is currently locked
   if (isAccountLocked(user)) {
     return res.status(423).json({
       message: 'Your account is locked due to too many failed attempts. Please try again later.',
@@ -86,8 +88,6 @@ async function sendLoginOtp(req, res) {
     });
   }
 
-  // Reject if the user already has a valid active session (single-device rule)
-  // The user must log out from Device A before logging in on Device B
   if (user.activeSessionId) {
     return res.status(409).json({
       message: 'Your account is already active on another device. Please sign out from that device first.',
@@ -97,12 +97,12 @@ async function sendLoginOtp(req, res) {
 
   const otp = generateOtp();
 
-  // Issuing a new OTP invalidates the previous one
-  user.otpHash    = await hashOtp(otp);
-  user.otpExpiry  = getOtpExpiry();
-  user.otpAttempts = 0;
-
-  await user.save();
+  // Use $set to update only OTP fields — avoids Mongoose full-document validation
+  // which would fail on any legacy document missing required fields
+  await User.updateOne(
+    { _id: user._id },
+    { $set: { otpHash: await hashOtp(otp), otpExpiry: getOtpExpiry(), otpAttempts: 0 } }
+  );
 
   const channel  = user.email ? 'email' : 'phone';
   const delivery = await deliverOtp(identifier, otp, channel);
@@ -113,8 +113,7 @@ async function sendLoginOtp(req, res) {
   return res.status(200).json(response);
 }
 
-// ─── POST /api/auth/verify-otp ───────────────────────────────────────────────
-// Verifies the OTP for both registration and login.
+// ─── POST /api/auth/verify-otp ────────────────────────────────────────────────
 async function verifyOtpHandler(req, res) {
   const { identifier, otp, purpose } = req.body;
 
@@ -122,12 +121,12 @@ async function verifyOtpHandler(req, res) {
     return res.status(400).json({ message: 'Identifier and OTP are required.' });
   }
 
+  // Re-fetch the user freshly so we have the latest otpHash just set by updateOne
   const user = await findUserByIdentifier(identifier);
   if (!user) {
     return res.status(404).json({ message: 'Account not found.' });
   }
 
-  // Reject locked accounts
   if (isAccountLocked(user)) {
     return res.status(423).json({
       message: 'Your account is locked. Please try again later.',
@@ -135,48 +134,44 @@ async function verifyOtpHandler(req, res) {
     });
   }
 
-  // Reject if no OTP has been issued
   if (!user.otpHash || !user.otpExpiry) {
     return res.status(400).json({ message: 'No active verification code. Please request a new one.' });
   }
 
-  // Reject expired OTPs
   if (new Date() > user.otpExpiry) {
     return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
   }
 
-  // Check the OTP — bcrypt compare
   const isCorrect = await verifyOtp(otp, user.otpHash);
 
   if (!isCorrect) {
-    user.otpAttempts        += 1;
-    user.failedLoginAttempts += 1;
+    const newAttempts = (user.failedLoginAttempts || 0) + 1;
 
-    // Lock the account after reaching the maximum allowed failures
-    if (user.failedLoginAttempts >= MAX_ATTEMPTS) {
+    if (newAttempts >= MAX_ATTEMPTS) {
       const lockExpiry = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
-      user.lockedUntil         = lockExpiry;
-      user.failedLoginAttempts = 0;  // reset counter after locking
-      await user.save();
-
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { lockedUntil: lockExpiry, failedLoginAttempts: 0, otpAttempts: newAttempts } }
+      );
       return res.status(423).json({
         message: `Too many failed attempts. Account locked for ${LOCKOUT_MINUTES} minutes.`,
         lockedUntil: lockExpiry,
       });
     }
 
-    await user.save();
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { failedLoginAttempts: newAttempts, otpAttempts: newAttempts } }
+    );
 
-    const remaining = MAX_ATTEMPTS - user.failedLoginAttempts;
+    const remaining = MAX_ATTEMPTS - newAttempts;
     return res.status(400).json({
       message: `Incorrect code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`,
       attemptsRemaining: remaining,
     });
   }
 
-  // ── OTP is correct ──────────────────────────────────────────────────────────
-
-  // For login: enforce single active device — reject if another session exists
+  // OTP is correct — enforce single active device for login
   if (purpose === 'login' && user.activeSessionId) {
     return res.status(409).json({
       message: 'Your account is already active on another device. Please sign out from that device first.',
@@ -184,36 +179,41 @@ async function verifyOtpHandler(req, res) {
     });
   }
 
-  // Clear the OTP fields so it cannot be reused
-  user.otpHash             = null;
-  user.otpExpiry           = null;
-  user.otpAttempts         = 0;
-  user.failedLoginAttempts = 0;
-  user.lockedUntil         = null;
+  // Create the new session
+  const sessionId = generateSessionId();
+  const now       = new Date();
 
-  if (purpose === 'registration') {
-    user.isVerified = true;
-  }
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        otpHash:             null,
+        otpExpiry:           null,
+        otpAttempts:         0,
+        failedLoginAttempts: 0,
+        lockedUntil:         null,
+        isVerified:          purpose === 'registration' ? true : user.isVerified,
+        activeSessionId:     sessionId,
+        lastLogin:           now,
+      },
+    }
+  );
 
-  // Create a new session
-  const sessionId          = generateSessionId();
-  user.activeSessionId     = sessionId;
-  user.lastLogin           = new Date();
+  // Fetch the updated user to return safe fields
+  const updatedUser = await User.findById(user._id);
 
-  await user.save();
-
-  const token = signToken(user._id.toString(), sessionId);
+  const token = signToken(updatedUser._id.toString(), sessionId);
   setSessionCookie(res, token);
 
   return res.status(200).json({
     message: 'Signed in successfully.',
-    user:    safeUser(user),
+    user:    safeUser(updatedUser),
   });
 }
 
-// ─── POST /api/auth/resend-otp ───────────────────────────────────────────────
+// ─── POST /api/auth/resend-otp ────────────────────────────────────────────────
 async function resendOtp(req, res) {
-  const { identifier, purpose } = req.body;
+  const { identifier } = req.body;
 
   if (!identifier) {
     return res.status(400).json({ message: 'Identifier is required.' });
@@ -224,7 +224,6 @@ async function resendOtp(req, res) {
     return res.status(200).json({ message: 'If an account exists, a new code has been sent.' });
   }
 
-  // Reject locked accounts
   if (isAccountLocked(user)) {
     return res.status(423).json({
       message: 'Your account is locked. Please try again later.',
@@ -232,11 +231,9 @@ async function resendOtp(req, res) {
     });
   }
 
-  // Enforce cooldown: check how much time is left on the current OTP
+  // Enforce the 60-second cooldown
   if (user.otpExpiry) {
     const secondsRemaining = Math.floor((user.otpExpiry - Date.now()) / 1000);
-    // OTP expires in 5 minutes (300s). Cooldown is 60s.
-    // If more than (300 - 60) = 240 seconds remain, the OTP was issued too recently.
     if (secondsRemaining > 300 - RESEND_COOLDOWN) {
       return res.status(429).json({
         message: `Please wait ${RESEND_COOLDOWN} seconds before requesting another code.`,
@@ -246,11 +243,10 @@ async function resendOtp(req, res) {
 
   const otp = generateOtp();
 
-  user.otpHash     = await hashOtp(otp);
-  user.otpExpiry   = getOtpExpiry();
-  user.otpAttempts = 0;
-
-  await user.save();
+  await User.updateOne(
+    { _id: user._id },
+    { $set: { otpHash: await hashOtp(otp), otpExpiry: getOtpExpiry(), otpAttempts: 0 } }
+  );
 
   const channel  = user.email ? 'email' : 'phone';
   const delivery = await deliverOtp(identifier, otp, channel);
@@ -261,27 +257,24 @@ async function resendOtp(req, res) {
   return res.status(200).json(response);
 }
 
-// ─── POST /api/auth/logout ───────────────────────────────────────────────────
+// ─── POST /api/auth/logout ────────────────────────────────────────────────────
 async function logout(req, res) {
-  // req.user is set by the authenticate middleware
   if (req.user) {
-    req.user.activeSessionId = null;
-    await req.user.save();
+    await User.updateOne({ _id: req.user._id }, { $set: { activeSessionId: null } });
   }
   clearSessionCookie(res);
   return res.status(200).json({ message: 'Signed out successfully.' });
 }
 
-// ─── GET /api/auth/me ────────────────────────────────────────────────────────
+// ─── GET /api/auth/me ─────────────────────────────────────────────────────────
 async function getMe(req, res) {
   return res.status(200).json({ user: safeUser(req.user) });
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function findUserByIdentifier(identifier) {
-  const looksLikeEmail = identifier.includes('@');
-  if (looksLikeEmail) {
+  if (identifier.includes('@')) {
     return User.findOne({ email: identifier.toLowerCase().trim() });
   }
   return User.findOne({ phone: identifier.trim() });
@@ -291,17 +284,16 @@ function isAccountLocked(user) {
   return user.lockedUntil && user.lockedUntil > new Date();
 }
 
-// Only return safe fields to the client — never expose hashes or session IDs
 function safeUser(user) {
   return {
-    id:          user._id,
-    surname:     user.surname,
-    email:       user.email,
-    phone:       user.phone,
-    isVerified:  user.isVerified,
-    lastLogin:   user.lastLogin,
-    hasPasskey:  user.passkeys && user.passkeys.length > 0,
-    createdAt:   user.createdAt,
+    id:         user._id,
+    surname:    user.surname,
+    email:      user.email,
+    phone:      user.phone,
+    isVerified: user.isVerified,
+    lastLogin:  user.lastLogin,
+    hasPasskey: user.passkeys && user.passkeys.length > 0,
+    createdAt:  user.createdAt,
   };
 }
 
