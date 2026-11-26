@@ -16,11 +16,5 @@ export default defineConfig({
       },
     },
   },
-  build: {
-    // @simplewebauthn/browser will be installed in Phase 7.
-    // Mark it external so the build doesn't fail until then.
-    rollupOptions: {
-      external: ['@simplewebauthn/browser'],
-    },
-  },
+
 })

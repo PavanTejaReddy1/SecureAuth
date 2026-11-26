@@ -3,14 +3,15 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../components/ui/Logo';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
-import { useAuth } from '../context/AuthContext';
-import { webauthnService } from '../services/api';
 import { Fingerprint, ArrowLeft } from 'lucide-react';
+
+// WebAuthn (Phase 7) — the @simplewebauthn/browser package is not installed yet.
+// This page shows the UI and handles the flow, but biometric calls will return
+// a friendly "not available" message until Phase 7 wires up the real library.
 
 export default function BiometricPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUser } = useAuth();
 
   const { identifier } = location.state || {};
 
@@ -21,44 +22,26 @@ export default function BiometricPage() {
     setStatus('scanning');
     setErrorMsg('');
 
-    try {
-      // Check if the WebAuthn library is available (installed in Phase 7)
-      let startAuthentication;
-      try {
-        const webauthnLib = await import(/* @vite-ignore */ '@simplewebauthn/browser');
-        startAuthentication = webauthnLib.startAuthentication;
-      } catch {
-        throw new Error('Biometric authentication is not yet configured on this device.');
-      }
-
-      // 1. Get a challenge from the server
-      const options = await webauthnService.authenticationOptions({ identifier });
-
-      // 2. Trigger the browser's biometric prompt
-      const authResponse = await startAuthentication(options);
-
-      // 3. Send the signed response to the server for verification
-      const data = await webauthnService.verifyAuthentication({ identifier, authResponse });
-
-      setStatus('success');
-      setUser(data.user);
-
-      setTimeout(() => navigate('/dashboard'), 800);
-    } catch (err) {
+    // Check whether the browser supports WebAuthn at all
+    if (!window.PublicKeyCredential) {
       setStatus('error');
-
-      // User cancelled the biometric prompt — show a friendly message
-      if (err.name === 'NotAllowedError') {
-        setErrorMsg('Biometric authentication was cancelled. Try again or use a code instead.');
-      } else {
-        setErrorMsg(err.message || 'Biometric authentication failed.');
-      }
+      setErrorMsg('Your browser does not support biometric authentication. Please use a 6-digit code instead.');
+      return;
     }
+
+    // The @simplewebauthn/browser library will be wired up in Phase 7.
+    // For now, show a clear placeholder message so the page is functional.
+    setStatus('error');
+    setErrorMsg('Biometric sign-in will be available in the next update. Please use a 6-digit code for now.');
   }
 
   function goToOtp() {
     navigate('/verify-otp', {
-      state: { identifier, identifierType: 'email', purpose: 'login' },
+      state: {
+        identifier,
+        identifierType: identifier && identifier.includes('@') ? 'email' : 'phone',
+        purpose: 'login',
+      },
     });
   }
 
@@ -72,11 +55,11 @@ export default function BiometricPage() {
 
         <div className="p-8 rounded-2xl bg-white/[0.03] border border-white/[0.07] text-center">
 
-          {/* Biometric icon */}
+          {/* Biometric icon — colour changes with status */}
           <div className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all duration-300 ${
             status === 'scanning' ? 'bg-indigo-500/20 border-2 border-indigo-500/60 scale-105' :
-            status === 'success'  ? 'bg-green-500/15 border-2 border-green-500/40' :
-            status === 'error'    ? 'bg-red-500/15 border-2 border-red-500/40' :
+            status === 'success'  ? 'bg-green-500/10 border-2 border-green-500/30' :
+            status === 'error'    ? 'bg-red-500/10 border border-red-500/25' :
             'bg-indigo-500/10 border border-indigo-500/20'
           }`}>
             <Fingerprint
@@ -91,20 +74,16 @@ export default function BiometricPage() {
           </div>
 
           <h1 className="text-2xl font-bold text-white mb-2">
-            {status === 'scanning' ? 'Verifying...' :
-             status === 'success'  ? 'Verified!' :
+            {status === 'scanning' ? 'Verifying...'  :
+             status === 'success'  ? 'Verified!'     :
              'Biometric sign in'}
           </h1>
 
           <p className="text-sm text-slate-500 mb-7 leading-relaxed">
-            {status === 'idle' &&
-              'Use your device fingerprint, Face ID, or security key to sign in securely.'}
-            {status === 'scanning' &&
-              'Follow the prompt on your device.'}
-            {status === 'success' &&
-              'Authentication successful. Redirecting you now.'}
-            {status === 'error' &&
-              'Authentication failed. Please try again.'}
+            {status === 'idle'     && 'Use your device fingerprint, Face ID, or security key to sign in securely.'}
+            {status === 'scanning' && 'Follow the prompt on your device.'}
+            {status === 'success'  && 'Authentication successful. Redirecting you now.'}
+            {status === 'error'    && 'Could not complete biometric authentication.'}
           </p>
 
           {errorMsg && <Alert type="error" message={errorMsg} />}
@@ -139,6 +118,7 @@ export default function BiometricPage() {
             <ArrowLeft size={14} /> Back to sign in
           </Link>
         </div>
+
       </div>
     </div>
   );

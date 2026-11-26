@@ -4,7 +4,7 @@ import Logo from '../components/ui/Logo';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
-import { isValidEmail, isValidPhone, isValidSurname, isValidDOB, getIdentifierType } from '../utils/validators';
+import { isValidSurname, isValidDOB, getIdentifierType } from '../utils/validators';
 import { authService } from '../services/api';
 
 export default function RegisterPage() {
@@ -22,7 +22,7 @@ export default function RegisterPage() {
 
   function handleChange(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
-    // Clear the field error when the user starts typing
+    // Clear that field's error as the user types
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
@@ -33,11 +33,10 @@ export default function RegisterPage() {
     const newErrors = {};
 
     if (!isValidSurname(form.surname)) {
-      newErrors.surname = 'Please enter a valid surname (letters only, 2–50 characters).';
+      newErrors.surname = 'Please enter a valid surname (2–50 characters, letters only).';
     }
 
-    const identifierType = getIdentifierType(form.identifier);
-    if (!identifierType) {
+    if (!getIdentifierType(form.identifier)) {
       newErrors.identifier = 'Please enter a valid email address or phone number.';
     }
 
@@ -62,13 +61,13 @@ export default function RegisterPage() {
 
     try {
       const identifierType = getIdentifierType(form.identifier);
+
       await authService.register({
         surname: form.surname.trim(),
         [identifierType]: form.identifier.trim(),
         dob: form.dob,
       });
 
-      // Registration succeeded — navigate to OTP verification
       navigate('/verify-otp', {
         state: {
           identifier: form.identifier.trim(),
@@ -85,25 +84,22 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm animate-fade-up">
 
-      {/* Card */}
-      <div className="w-full max-w-md animate-fade-up">
-
-        {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link to="/"><Logo size="md" /></Link>
         </div>
 
         <div className="p-8 rounded-2xl bg-white/[0.03] border border-white/[0.07]">
 
-          <div className="mb-7">
-            <h1 className="text-2xl font-bold text-white mb-1.5">Create your account</h1>
+          <div className="mb-6">
+            <h1 className="text-xl font-bold text-white mb-1">Create your account</h1>
             <p className="text-sm text-slate-500">
-              Join SecureAuth — it only takes a moment.
+              We'll send a verification code to confirm your contact.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
 
             <Input
               label="Surname"
@@ -113,10 +109,11 @@ export default function RegisterPage() {
               onChange={(e) => handleChange('surname', e.target.value)}
               error={errors.surname}
               autoComplete="family-name"
+              autoFocus
             />
 
             <Input
-              label="Email address or phone number"
+              label="Email or phone number"
               type="text"
               placeholder="you@example.com or +447911123456"
               value={form.identifier}
@@ -132,14 +129,13 @@ export default function RegisterPage() {
               onChange={(e) => handleChange('dob', e.target.value)}
               error={errors.dob}
               autoComplete="bdate"
-              // Limit the calendar to sensible range
               min="1900-01-01"
               max={new Date().toISOString().slice(0, 10)}
             />
 
             {serverError && <Alert type="error" message={serverError} />}
 
-            <Button type="submit" loading={loading} className="mt-1">
+            <Button type="submit" loading={loading}>
               Continue
             </Button>
 
@@ -151,6 +147,7 @@ export default function RegisterPage() {
               Sign in
             </Link>
           </p>
+
         </div>
       </div>
     </div>
