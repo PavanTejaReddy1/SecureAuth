@@ -15,17 +15,24 @@ connectDB();
 
 const app = express();
 
-// Allow requests from the deployed frontend URL and localhost for development
+// CORS — allow the deployed frontend and localhost for development.
+// Any *.vercel.app origin is also allowed to cover preview deployments.
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://secure-auth-aite.vercel.app',
 ];
+
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (e.g. mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
+    callback(new Error('Not allowed by CORS: ' + origin));
   },
   credentials: true,
 }));
