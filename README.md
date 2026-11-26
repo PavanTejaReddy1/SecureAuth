@@ -1,6 +1,6 @@
 # SecureAuth
 
-SecureAuth is an authentication platform I built as a company technical assessment. It covers everything the assignment asked for: OTP-based login, biometric authentication with WebAuthn, account lockout after failed attempts, and a single active device restriction.
+SecureAuth is a secure authentication platform that provides OTP-based login, WebAuthn-powered biometric authentication, automatic account lockout after multiple failed login attempts, and single-device session management to ensure only one active device per user at a time.
 
 The stack is React on the frontend and Node.js with Express and MongoDB on the backend. No passwords are stored anywhere — users authenticate with a one-time code sent to their email or phone, or with a registered passkey (Face ID, fingerprint, etc.).
 
