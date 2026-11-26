@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/* ─── Custom font stacks ─────────────────────────────────────── */
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ─── Base reset ─────────────────────────────────────────────── */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #0a0f1e;
+  color: #f1f5f9;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+/* ─── Selection ──────────────────────────────────────────────── */
+::selection { background: rgba(59,130,246,0.3); color: #fff; }
+
+/* ─── Keyframes used by Tailwind animate- utilities ─────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-5px); }
+  75%       { transform: translateX(5px); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Three utility classes that need CSS variables or tricks ── */
+
+/* Gradient brand text — Tailwind 4 bg-clip-text needs this for multi-stop */
+.brand-gradient {
+  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 50%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* OTP digit box — focus glow that Tailwind ring can't do with scale together */
+.otp-box {
+  width: 52px;
+  height: 60px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: #f1f5f9;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.15s;
+  caret-color: #3b82f6;
+}
+
+.otp-box:focus {
+  border-color: rgba(59,130,246,0.75);
+  background: rgba(59,130,246,0.07);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  transform: scale(1.05);
+}
+
+.otp-box.filled {
+  border-color: rgba(59,130,246,0.5);
+  color: #93c5fd;
+}
+
+.otp-box.error {
+  border-color: rgba(239,68,68,0.7);
+  animation: shake 0.3s ease;
+}
+
+/* Animate fade-up for page entry */
+.animate-fade-up {
+  animation: fade-up 0.4s ease both;
+}
