@@ -20,9 +20,9 @@ export default function DashboardPage() {
     : '—';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f4f5f7]">
 
-      {/* Header */}
+      {/* Header — white bar */}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <Logo size="sm" />
@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
       <main className="max-w-3xl mx-auto px-6 py-10">
 
-        {/* Greeting */}
+        {/* Greeting — on gray background */}
         <div className="mb-8 animate-fade-up">
           <p className="text-sm text-gray-400 mb-0.5">Welcome back</p>
           <h1 className="text-2xl font-bold text-gray-900">{user.surname || 'User'}</h1>
@@ -46,13 +46,13 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          {/* Profile */}
-          <div className="p-6 rounded-2xl bg-white border border-gray-200">
+          {/* Profile — white card */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
                 <User size={15} className="text-gray-600" />
               </div>
-              <h2 className="text-sm font-semibold text-gray-700">Profile</h2>
+              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Profile</h2>
             </div>
             <div className="flex flex-col gap-4">
               <InfoRow label="Surname" value={user.surname || '—'} />
@@ -61,13 +61,13 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Security */}
-          <div className="p-6 rounded-2xl bg-white border border-gray-200">
+          {/* Security — white card */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
                 <Shield size={15} className="text-gray-600" />
               </div>
-              <h2 className="text-sm font-semibold text-gray-700">Security</h2>
+              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Security</h2>
             </div>
             <div className="flex flex-col gap-1">
               <SecurityRow label="OTP verification" active />
@@ -76,14 +76,14 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Session */}
-          <div className="p-6 rounded-2xl bg-white border border-gray-200 md:col-span-2">
+          {/* Session — white card spanning full width */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:col-span-2">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
                 <Smartphone size={15} className="text-gray-600" />
               </div>
-              <h2 className="text-sm font-semibold text-gray-700 flex-1">Current session</h2>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700 font-medium">
+              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex-1">Current session</h2>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-green-700 font-semibold">
                 Active
               </span>
             </div>
@@ -96,11 +96,10 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* Sign out */}
         <div className="mt-6 max-w-xs">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-red-50 border border-gray-300 hover:border-red-200 text-gray-600 hover:text-red-600 text-sm font-medium transition-all"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-red-50 border border-gray-200 hover:border-red-200 text-gray-600 hover:text-red-600 text-sm font-medium shadow-sm transition-all"
           >
             <LogOut size={15} />
             Sign out
@@ -115,8 +114,8 @@ export default function DashboardPage() {
 function InfoRow({ label, value }) {
   return (
     <div>
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className="text-sm text-gray-800 font-medium">{value}</p>
+      <p className="text-xs text-gray-400 mb-0.5 uppercase tracking-wider">{label}</p>
+      <p className="text-sm text-gray-800 font-semibold">{value}</p>
     </div>
   );
 }
@@ -125,7 +124,7 @@ function SecurityRow({ label, active }) {
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0">
       <span className="text-sm text-gray-600">{label}</span>
-      <span className={`flex items-center gap-1.5 text-xs font-medium ${active ? 'text-green-700' : 'text-gray-400'}`}>
+      <span className={`flex items-center gap-1.5 text-xs font-semibold ${active ? 'text-green-700' : 'text-gray-400'}`}>
         <CheckCircle size={13} />
         {active ? 'Enabled' : 'Not set up'}
       </span>

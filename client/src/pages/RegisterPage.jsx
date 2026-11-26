@@ -37,16 +37,10 @@ export default function RegisterPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-
     const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
+    if (Object.keys(validationErrors).length > 0) { setErrors(validationErrors); return; }
     setLoading(true);
     setServerError('');
-
     try {
       const identifierType = getIdentifierType(form.identifier);
       await authService.register({
@@ -54,13 +48,8 @@ export default function RegisterPage() {
         [identifierType]: form.identifier.trim(),
         dob: form.dob,
       });
-
       navigate('/verify-otp', {
-        state: {
-          identifier: form.identifier.trim(),
-          identifierType,
-          purpose: 'registration',
-        },
+        state: { identifier: form.identifier.trim(), identifierType, purpose: 'registration' },
       });
     } catch (err) {
       setServerError(err.message);
@@ -70,24 +59,22 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#f4f5f7] flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm animate-fade-up">
 
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6">
           <Link to="/"><Logo size="md" /></Link>
         </div>
 
-        <div className="p-8 rounded-2xl bg-white border border-gray-200">
+        {/* White card */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-8">
 
           <div className="mb-6">
             <h1 className="text-xl font-bold text-gray-900 mb-1">Create your account</h1>
-            <p className="text-sm text-gray-500">
-              We'll send a verification code to confirm your contact.
-            </p>
+            <p className="text-sm text-gray-500">We'll send a verification code to confirm your contact.</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-
             <Input
               label="Surname"
               type="text"
@@ -98,7 +85,6 @@ export default function RegisterPage() {
               autoComplete="family-name"
               autoFocus
             />
-
             <Input
               label="Email or phone number"
               type="text"
@@ -108,7 +94,6 @@ export default function RegisterPage() {
               error={errors.identifier}
               autoComplete="email"
             />
-
             <Input
               label="Date of birth"
               type="date"
@@ -119,18 +104,13 @@ export default function RegisterPage() {
               min="1900-01-01"
               max={new Date().toISOString().slice(0, 10)}
             />
-
             {serverError && <Alert type="error" message={serverError} />}
-
-            <Button type="submit" loading={loading}>
-              Continue
-            </Button>
-
+            <Button type="submit" loading={loading}>Continue</Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-gray-400 mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="text-gray-900 font-semibold hover:underline transition-colors">
+            <Link to="/login" className="text-gray-900 font-semibold hover:underline">
               Sign in
             </Link>
           </p>

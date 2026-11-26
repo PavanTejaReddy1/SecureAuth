@@ -16,8 +16,8 @@ export default function App() {
   // Don't render routes until we know the auth state
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-7 h-7 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#f4f5f7] flex items-center justify-center">
+        <div className="w-7 h-7 border-2 border-gray-200 border-t-gray-700 rounded-full animate-spin" />
       </div>
     );
   }

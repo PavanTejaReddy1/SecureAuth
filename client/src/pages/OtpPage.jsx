@@ -27,9 +27,7 @@ export default function OtpPage() {
   const [countdown, setCountdown] = useState(RESEND_COOLDOWN);
   const [resending, setResending] = useState(false);
 
-  useEffect(() => {
-    if (!identifier) navigate('/login');
-  }, [identifier, navigate]);
+  useEffect(() => { if (!identifier) navigate('/login'); }, [identifier, navigate]);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -37,88 +35,64 @@ export default function OtpPage() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  useEffect(() => {
-    if (otp.length === 6) handleVerify();
-  }, [otp]);
+  useEffect(() => { if (otp.length === 6) handleVerify(); }, [otp]);
 
   async function handleVerify() {
-    if (otp.length !== 6) {
-      setError('Please enter all 6 digits.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setHasOtpError(false);
-
+    if (otp.length !== 6) { setError('Please enter all 6 digits.'); return; }
+    setLoading(true); setError(''); setHasOtpError(false);
     try {
       const data = await authService.verifyOtp({ identifier, otp, purpose });
       setSuccess('Verified successfully!');
       setUser(data.user);
       setTimeout(() => navigate('/dashboard'), 600);
     } catch (err) {
-      setError(err.message);
-      setHasOtpError(true);
-      setOtp('');
-    } finally {
-      setLoading(false);
-    }
+      setError(err.message); setHasOtpError(true); setOtp('');
+    } finally { setLoading(false); }
   }
 
   async function handleResend() {
     if (countdown > 0) return;
-
-    setResending(true);
-    setError('');
-    setDemoOtp('');
-
+    setResending(true); setError(''); setDemoOtp('');
     try {
       const data = await authService.resendOtp({ identifier, purpose });
       setCountdown(RESEND_COOLDOWN);
       if (IS_DEMO && data.demoOtp) setDemoOtp(data.demoOtp);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setResending(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setResending(false); }
   }
 
   const maskedId = identifier ? maskIdentifier(identifier) : '';
   const channelLabel = identifierType === 'email' ? 'email' : 'phone';
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#f4f5f7] flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm animate-fade-up">
 
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6">
           <Link to="/"><Logo size="md" /></Link>
         </div>
 
-        <div className="p-8 rounded-2xl bg-white border border-gray-200">
+        {/* White card */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-8">
 
           <div className="text-center mb-8">
-            {/* Lock icon */}
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-gray-900 mb-1.5">Check your {channelLabel}</h1>
+            <h1 className="text-xl font-bold text-gray-900 mb-1">Check your {channelLabel}</h1>
             <p className="text-sm text-gray-500 leading-relaxed">
               We sent a 6-digit code to{' '}
-              <span className="text-gray-900 font-medium">{maskedId}</span>
+              <span className="text-gray-900 font-semibold">{maskedId}</span>
             </p>
           </div>
 
           <div className="mb-6">
             <OtpInput
               value={otp}
-              onChange={(val) => {
-                setOtp(val);
-                setHasOtpError(false);
-                setError('');
-              }}
+              onChange={(val) => { setOtp(val); setHasOtpError(false); setError(''); }}
               hasError={hasOtpError}
               disabled={loading}
             />
@@ -127,41 +101,32 @@ export default function OtpPage() {
           {error && <Alert type="error" message={error} />}
           {success && <Alert type="success" message={success} />}
 
-          <Button
-            onClick={handleVerify}
-            loading={loading}
-            disabled={otp.length !== 6}
-            className="mt-5"
-          >
+          <Button onClick={handleVerify} loading={loading} disabled={otp.length !== 6} className="mt-5">
             Verify code
           </Button>
 
           <div className="text-center mt-5">
             {countdown > 0 ? (
               <p className="text-sm text-gray-400">
-                Resend code in{' '}
-                <span className="text-gray-700 font-mono font-medium">{countdown}s</span>
+                Resend in <span className="text-gray-700 font-mono font-semibold">{countdown}s</span>
               </p>
             ) : (
               <button
                 onClick={handleResend}
                 disabled={resending}
-                className="text-sm text-gray-900 font-medium hover:underline disabled:opacity-40 transition-colors"
+                className="text-sm text-gray-900 font-semibold hover:underline disabled:opacity-40"
               >
                 {resending ? 'Sending...' : "Didn't receive it? Resend"}
               </button>
             )}
           </div>
 
-          {/* Demo panel */}
           {IS_DEMO && (
             <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-gray-200">
-              <p className="text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Demo mode</p>
-              <p className="text-xs text-gray-400 mb-2">
-                No real messages are sent. Your OTP is shown here for evaluation.
-              </p>
+              <p className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-widest">Demo mode</p>
+              <p className="text-xs text-gray-400 mb-2">No real messages sent. OTP shown for evaluation.</p>
               {demoOtp && (
-                <p className="text-2xl font-mono font-bold text-gray-900 tracking-widest text-center py-1">
+                <p className="text-3xl font-mono font-bold text-gray-900 tracking-[0.3em] text-center py-1">
                   {demoOtp}
                 </p>
               )}
@@ -172,9 +137,7 @@ export default function OtpPage() {
 
         <p className="text-center text-sm text-gray-400 mt-5">
           Wrong details?{' '}
-          <Link to="/register" className="text-gray-900 font-medium hover:underline transition-colors">
-            Go back
-          </Link>
+          <Link to="/register" className="text-gray-700 font-medium hover:underline">Go back</Link>
         </p>
       </div>
     </div>

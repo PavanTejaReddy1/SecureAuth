@@ -8,12 +8,7 @@ export default function Alert({ type = 'error', message }) {
     warning: 'bg-amber-50 border-amber-200 text-amber-700',
   };
 
-  const icons = {
-    error:   '✕',
-    success: '✓',
-    info:    'ℹ',
-    warning: '⚠',
-  };
+  const icons = { error: '✕', success: '✓', info: 'ℹ', warning: '⚠' };
 
   return (
     <div className={`flex items-start gap-2.5 px-4 py-3 rounded-xl border text-sm ${styles[type]}`}>
