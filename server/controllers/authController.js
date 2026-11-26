@@ -76,9 +76,12 @@ async function sendLoginOtp(req, res) {
 
   const user = await findUserByIdentifier(identifier);
 
-  if (!user || !user.isVerified) {
-    // Don't reveal whether the account exists
-    return res.status(200).json({ message: 'If an account exists, a verification code has been sent.' });
+  if (!user) {
+    return res.status(404).json({ message: 'No account found with this email or phone number. Please register first.' });
+  }
+
+  if (!user.isVerified) {
+    return res.status(403).json({ message: 'This account has not been verified yet. Please complete registration.' });
   }
 
   if (isAccountLocked(user)) {

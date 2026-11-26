@@ -15,14 +15,15 @@ export default function LoginPage() {
   const [identifierError, setIdentifierError] = useState('');
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
-  // Show a specific warning when the account is active on another device
   const [activeOnOtherDevice, setActiveOnOtherDevice] = useState(false);
+  const [showRegisterLink, setShowRegisterLink] = useState(false);
 
   function handleChange(value) {
     setIdentifier(value);
     setIdentifierError('');
     setServerError('');
     setActiveOnOtherDevice(false);
+    setShowRegisterLink(false);
   }
 
   async function handleSubmit(e) {
@@ -50,9 +51,12 @@ export default function LoginPage() {
         },
       });
     } catch (err) {
-      // The backend sends alreadyActive:true when the account has an open session
       if (err.message && err.message.includes('already active on another device')) {
         setActiveOnOtherDevice(true);
+      } else if (err.message && err.message.includes('No account found')) {
+        // Show a register link alongside the error message
+        setServerError('No account found with this email or phone number.');
+        setShowRegisterLink(true);
       } else {
         setServerError(err.message);
       }
@@ -92,7 +96,23 @@ export default function LoginPage() {
               autoComplete="email"
             />
 
-            {serverError && <Alert type="error" message={serverError} />}
+            {serverError && !showRegisterLink && <Alert type="error" message={serverError} />}
+
+            {/* Not registered — show error with a direct link to register */}
+            {serverError && showRegisterLink && (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+                <span className="text-red-500 font-bold mt-px leading-none">✕</span>
+                <div>
+                  <p className="text-sm text-red-700">{serverError}</p>
+                  <Link
+                    to="/register"
+                    className="text-sm font-semibold text-red-800 hover:underline mt-1 inline-block"
+                  >
+                    Create an account →
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {/* Specific message for active-on-another-device scenario */}
             {activeOnOtherDevice && (
