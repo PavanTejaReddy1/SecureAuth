@@ -42,6 +42,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+// Root — shown when someone visits the backend URL directly in a browser
+app.get('/', (req, res) => {
+  res.json({
+    name:    'SecureAuth API',
+    status:  'running',
+    version: '1.0.0',
+    health:  '/api/health',
+  });
+});
+
 // 404
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found.' });
