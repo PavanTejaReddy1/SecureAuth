@@ -1,117 +1,105 @@
 # SecureAuth
 
-A production-quality authentication platform built as a company technical assessment.
+SecureAuth is an authentication platform I built as a company technical assessment. It covers everything the assignment asked for: OTP-based login, biometric authentication with WebAuthn, account lockout after failed attempts, and a single active device restriction.
 
-SecureAuth implements OTP-based authentication, biometric passkeys (WebAuthn/Face ID), account lockout protection, and single active device enforcement — all in one clean, secure application.
-
----
-
-## Features
-
-| Feature | Details |
-|---------|---------|
-| Registration | Surname, email or phone, date of birth |
-| OTP verification | 6-digit code, bcrypt hashed, 5-minute expiry |
-| OTP login | Email or phone → OTP → session |
-| Biometric login | WebAuthn passkeys (Face ID, fingerprint, security key) |
-| Account lockout | Locked for 1 hour after 5 incorrect attempts |
-| Single active device | Only one authenticated session per user at a time |
-| Demo mode | OTP shown in UI for evaluators — no email/SMS needed |
-| Secure sessions | HTTP-only cookies, JWT, server-side session validation |
+The stack is React on the frontend and Node.js with Express and MongoDB on the backend. No passwords are stored anywhere — users authenticate with a one-time code sent to their email or phone, or with a registered passkey (Face ID, fingerprint, etc.).
 
 ---
 
-## Technology Stack
+## What it does
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 19, Vite, Tailwind CSS v4 |
-| Backend | Node.js, Express |
-| Database | MongoDB, Mongoose |
-| OTP hashing | bcryptjs |
-| Session tokens | jsonwebtoken |
-| Email delivery | Nodemailer (Gmail SMTP) |
-| SMS delivery | Twilio (optional) |
-| Biometrics | @simplewebauthn/browser + @simplewebauthn/server |
-| Icons | Lucide React |
+**Registration** — A user signs up with their surname, email or phone number, and date of birth. After submitting the form they receive a 6-digit verification code. Until that code is verified, the account isn't active.
+
+**OTP login** — The user enters their email or phone, receives a 6-digit code, and enters it to sign in. The code is valid for 5 minutes and can only be used once.
+
+**Biometric login** — Once signed in, the user can register a passkey from the dashboard. After that they can sign in using Face ID, fingerprint, or a hardware security key — no code needed.
+
+**Account lockout** — If someone enters the wrong OTP 5 times in a row, the account locks for 1 hour. This is tracked server-side and can't be bypassed by refreshing the page or switching browsers.
+
+**Single active device** — Only one authenticated session is allowed per account at a time. If you're already signed in and try to sign in from another browser or device, the second login is blocked until you sign out from the first one.
+
+**Demo mode** — Since this is an assessment, I added a demo mode that shows the OTP code directly on the verification screen. No email or SMS provider needs to be configured to test the full flow.
 
 ---
 
-## Project Structure
+## Tech stack
+
+- **Frontend**: React 19, Vite, Tailwind CSS
+- **Backend**: Node.js, Express
+- **Database**: MongoDB with Mongoose
+- **Authentication**: OTP via bcrypt-hashed codes, JWT in HTTP-only cookies
+- **Biometrics**: @simplewebauthn/browser and @simplewebauthn/server
+- **Email**: Nodemailer (Gmail SMTP)
+- **SMS**: Twilio (optional, not required for demo)
+
+---
+
+## Project structure
 
 ```
 SecureAuth/
-  client/                     React + Vite frontend
+  client/                   React frontend
     src/
       components/
-        auth/                 OtpInput, ProtectedRoute
-        ui/                   Logo, Input, Button, Alert
-      context/                AuthContext — global auth state
-      pages/                  One file per screen
-      services/               Axios API client (api.js)
-      utils/                  validators.js, format.js
-      App.jsx                 Routes
-      main.jsx                Entry point
+        auth/               OtpInput, ProtectedRoute
+        ui/                 Logo, Input, Button, Alert
+      context/              AuthContext — holds the logged-in user state
+      pages/                One file per screen
+      services/             api.js — Axios client for all API calls
+      utils/                validators.js, format.js
 
-  server/
-    config/                   db.js — MongoDB connection
+  server/                   Express backend
+    config/                 db.js — MongoDB connection
     controllers/
-      authController.js       Registration, OTP, login, logout
-      webauthnController.js   Passkey registration and authentication
+      authController.js     Handles register, login, OTP, logout
+      webauthnController.js Handles passkey registration and login
     middleware/
-      authenticate.js         Session validation middleware
+      authenticate.js       Verifies the session cookie on protected routes
+      asyncHandler.js       Catches async errors so they don't crash the server
     models/
-      User.js                 Mongoose schema
+      User.js               Mongoose schema
     routes/
-      auth.js                 /api/auth/* routes
-      webauthn.js             /api/webauthn/* routes
+      auth.js               /api/auth/* routes
+      webauthn.js           /api/webauthn/* routes
     services/
-      otpDelivery.js          Routes to demo or real delivery
-      emailService.js         Nodemailer email
-      smsService.js           Twilio SMS
+      otpDelivery.js        Routes to demo mode or real email/SMS
+      emailService.js       Nodemailer
+      smsService.js         Twilio
     utils/
-      otp.js                  generateOtp, hashOtp, verifyOtp
-      session.js              JWT sign/verify, cookie helpers
-    server.js                 Express app entry point
+      otp.js                OTP generation and hashing
+      session.js            JWT creation, cookie helpers
+    server.js               App entry point
 ```
 
 ---
 
-## Installation
+## Getting started
 
-### Prerequisites
+You need Node.js 18+ and a MongoDB instance (local or Atlas).
 
-- Node.js 18 or later
-- MongoDB (local or MongoDB Atlas)
-
-### Clone the repository
+### Clone the repo
 
 ```bash
 git clone https://github.com/PavanTejaReddy1/SecureAuth.git
 cd SecureAuth
 ```
 
----
-
-## Backend Setup
+### Start the backend
 
 ```bash
 cd server
 cp .env.example .env
-# Edit .env — see Environment Variables section below
+# Edit .env — the defaults work for local development with demo mode on
 npm install
 npm run dev
 ```
 
-The API starts on `http://localhost:5000`.
+The API runs on `http://localhost:5000`.
 
----
-
-## Frontend Setup
+### Start the frontend
 
 ```bash
 cd client
-# .env is already configured for development
 npm install
 npm run dev
 ```
@@ -120,323 +108,186 @@ The app opens at `http://localhost:5173`.
 
 ---
 
-## MongoDB Configuration
+## Environment variables
 
-**Local MongoDB:**
-```
-MONGODB_URI=mongodb://localhost:27017/secureauth
-```
-
-**MongoDB Atlas:**
-```
-MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/secureauth
-```
-
----
-
-## Environment Variables
-
-Copy `server/.env.example` to `server/.env` and fill in the values.
+Copy `server/.env.example` to `server/.env`. The important ones:
 
 ```env
-# Server
 PORT=5000
 NODE_ENV=development
-
-# Database
 MONGODB_URI=mongodb://localhost:27017/secureauth
+SESSION_SECRET=pick-a-long-random-string-and-keep-it-secret
 
-# Session (use a long random string in production)
-SESSION_SECRET=change_this_to_something_long_and_random
-
-# OTP behaviour
+# How many wrong OTP attempts before lockout
 OTP_EXPIRY_MINUTES=5
 OTP_MAX_ATTEMPTS=5
 LOCKOUT_DURATION_MINUTES=60
 
-# Demo mode — set true to show OTPs in the API response
-# MUST be false in production
+# Set to true to show OTP codes in the API response instead of sending emails/SMS
+# Never use this in production
 DEMO_MODE=true
 
-# Email — Gmail SMTP
-# Enable 2FA on your Google account, then create an App Password at:
-# https://myaccount.google.com/apppasswords
+# Gmail SMTP — only needed if DEMO_MODE=false
+# Create an App Password at https://myaccount.google.com/apppasswords
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_SECURE=false
-EMAIL_USER=your_address@gmail.com
-EMAIL_PASS=your_app_password
+EMAIL_USER=your@gmail.com
+EMAIL_PASS=your-app-password
 
-# SMS — Twilio (optional)
-# Sign up at https://www.twilio.com, then run: npm install twilio
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=+1234567890
+# Twilio SMS — optional, only needed for phone number login in production
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
 
-# WebAuthn
+# WebAuthn — must match the URL you're running the app on
 RP_ID=localhost
 RP_NAME=SecureAuth
 RP_ORIGIN=http://localhost:5173
 ```
 
-**Frontend** (`client/.env`):
+The frontend also has a `.env` file at `client/.env`:
+
 ```env
-# Shows OTP in the UI during demo evaluation
 VITE_DEMO_MODE=true
 ```
 
----
-
-## Demo Mode (for evaluation)
-
-Demo mode lets you test the full authentication flow without configuring email or SMS credentials.
-
-**How it works:**
-1. The backend generates a real OTP and stores its bcrypt hash normally.
-2. Instead of sending an email or SMS, it returns the OTP in the API response.
-3. The frontend displays it in a yellow "Demo mode" panel on the OTP verification screen.
-4. You enter the displayed code and the backend verifies it through the same logic as production.
-
-**To enable:**
-- Set `DEMO_MODE=true` in `server/.env`
-- Set `VITE_DEMO_MODE=true` in `client/.env`
-
-**Production safety:**
-- If `NODE_ENV=production` and `DEMO_MODE=true`, the server ignores demo mode and logs a warning.
+This controls whether the demo OTP panel appears in the browser.
 
 ---
 
-## Email Configuration (production)
+## Demo mode
 
-1. Enable 2-factor authentication on your Gmail account.
-2. Go to https://myaccount.google.com/apppasswords and create an App Password.
-3. Set `EMAIL_USER` and `EMAIL_PASS` in your `.env`.
-4. Set `DEMO_MODE=false`.
+With `DEMO_MODE=true` on the server and `VITE_DEMO_MODE=true` on the client:
 
-For other SMTP providers, change `EMAIL_HOST` and `EMAIL_PORT` accordingly.
+1. Register or sign in normally.
+2. Instead of sending an email or SMS, the server returns the OTP code in the API response.
+3. The OTP page shows a yellow panel with the actual code.
+4. Enter it and the verification goes through the same backend logic as it would in production.
 
----
+The demo OTP is the real generated code — it's not fake or hardcoded. The only difference from production is where it's delivered.
 
-## SMS Configuration (optional)
-
-1. Create a Twilio account at https://www.twilio.com.
-2. Get your Account SID, Auth Token, and a Twilio phone number.
-3. Run `npm install twilio` inside the `server` folder.
-4. Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` in `.env`.
+If you set `NODE_ENV=production`, demo mode is disabled automatically even if `DEMO_MODE=true` is set.
 
 ---
 
-## Authentication Flow
+## How the authentication works
 
-### Registration
+**OTP registration**
+
+1. User submits the registration form.
+2. Server creates an unverified user record and generates a 6-digit OTP.
+3. The OTP is hashed with bcrypt and stored. The plain code is sent (or shown in demo mode).
+4. User enters the code. Server compares it against the hash.
+5. On success, the account is marked verified and a session is created.
+
+**OTP login**
+
+1. User enters their email or phone.
+2. Server checks the account exists and is verified, not locked, and has no active session.
+3. Generates a new OTP, invalidating any previous one.
+4. User enters the code. Server verifies it.
+5. On success, a session ID is generated and stored on the user record. A JWT containing that session ID is set in an HTTP-only cookie.
+
+**Session validation**
+
+Every protected API request reads the cookie, verifies the JWT, then checks that the session ID in the token matches the `activeSessionId` stored in the database. If someone logs in from another device, the session ID changes and the first device's requests start returning 401.
+
+**Account lockout**
+
+The failed attempt counter is stored on the user document. Each wrong OTP increments it. When it hits 5, `lockedUntil` is set to one hour from now. All further login attempts (including requesting a new OTP) are rejected with a 423 status until the lock expires.
+
+**Biometric login (WebAuthn)**
+
+1. User signs in with OTP first to establish their identity.
+2. From the dashboard they click "Register a passkey".
+3. The server sends a challenge. The browser shows the native Face ID/fingerprint prompt and creates a public/private key pair on the device.
+4. The browser sends back the public key credential. The server stores the credential ID, public key, and counter.
+5. For future logins, the user enters their email/phone and chooses biometric login. The server sends a challenge signed with the stored public key. The browser verifies it with the private key (using biometrics to unlock it). The signed response comes back to the server, which verifies the signature.
+6. No biometric data is stored anywhere. The device handles all of that internally.
+
+---
+
+## API endpoints
+
+**Auth**
 
 ```
-User fills form (surname, email/phone, DOB)
-  → POST /api/auth/register
-  → Server validates and checks for duplicates
-  → Creates user (isVerified: false)
-  → Generates OTP, stores bcrypt hash
-  → Delivers OTP (or returns in demo mode)
-  → User enters OTP
-  → POST /api/auth/verify-otp (purpose: registration)
-  → Server verifies hash, sets isVerified: true
-  → Creates session, sets HTTP-only cookie
-  → Redirects to dashboard
+POST /api/auth/register        — Create a new account (unverified)
+POST /api/auth/send-otp        — Send a login OTP to an existing verified account
+POST /api/auth/verify-otp      — Verify an OTP (registration or login)
+POST /api/auth/resend-otp      — Request a new OTP (60-second cooldown)
+POST /api/auth/logout          — Revoke the current session
+GET  /api/auth/me              — Get the currently logged-in user (requires session)
 ```
 
-### Login
+**WebAuthn**
 
 ```
-User enters email or phone
-  → POST /api/auth/send-otp
-  → Server checks account exists, not locked, no active session
-  → Generates OTP, delivers it
-  → User enters OTP
-  → POST /api/auth/verify-otp (purpose: login)
-  → Server verifies hash
-  → Creates session, sets HTTP-only cookie
-  → Redirects to dashboard
+GET  /api/webauthn/registration-options    — Get passkey registration challenge (requires session)
+POST /api/webauthn/verify-registration     — Save a registered passkey (requires session)
+POST /api/webauthn/authentication-options  — Get authentication challenge for biometric login
+POST /api/webauthn/verify-authentication   — Verify biometric login response
 ```
 
-### Biometric login
+**HTTP status codes used**
 
-```
-User enters email or phone, clicks "Use Face ID / Fingerprint"
-  → POST /api/webauthn/authentication-options
-  → Server generates a challenge
-  → Browser shows Face ID / fingerprint prompt
-  → POST /api/webauthn/verify-authentication
-  → Server verifies signed challenge against stored public key
-  → Creates session, sets HTTP-only cookie
-  → Redirects to dashboard
-```
-
----
-
-## Account Lockout
-
-After 5 consecutive incorrect OTP attempts:
-- The account is locked for 1 hour.
-- Further login attempts are rejected with HTTP 423.
-- The frontend redirects to the Account Locked screen showing the remaining time.
-- After the hour expires, the user can try again.
-- A successful login resets the failed attempt counter.
-
-The lockout counter is stored on the user record. `failedLoginAttempts` increments on each wrong OTP. When it reaches `OTP_MAX_ATTEMPTS` (default 5), `lockedUntil` is set to `now + 60 minutes`.
-
----
-
-## Single Active Device
-
-Only one authenticated session is allowed per user at a time.
-
-How it works:
-- On successful authentication, a unique `sessionId` is generated and stored on the user record as `activeSessionId`.
-- The same `sessionId` is embedded in the JWT stored in the HTTP-only cookie.
-- Every protected API request verifies that the cookie's `sessionId` matches the `activeSessionId` in the database.
-- When a user on Device A is logged in and Device B tries to log in, the server rejects the OTP send with HTTP 409.
-- When Device A logs out, `activeSessionId` is cleared. Device B can then log in.
-
-This is enforced entirely on the backend. No browser-generated device IDs are trusted.
-
----
-
-## WebAuthn / Passkeys
-
-WebAuthn allows users to authenticate using device biometrics (Face ID, fingerprint, Windows Hello) or hardware security keys without passwords.
-
-**How it works:**
-1. The user signs in with OTP first to establish their identity.
-2. From the dashboard, they click "Register a passkey".
-3. The server generates a registration challenge.
-4. The browser shows the native biometric prompt. The browser creates a public/private key pair on the device.
-5. The browser sends back the public key (not any biometric data).
-6. The server stores the credential ID and public key.
-
-For subsequent logins:
-1. The user enters their email/phone and clicks "Use Face ID / Fingerprint".
-2. The server sends a challenge signed with the stored public key.
-3. The browser shows the biometric prompt and signs the challenge with the private key.
-4. The server verifies the signature using the stored public key.
-
-**Important:** No biometric data is ever stored. The device handles biometric verification internally. SecureAuth only stores a standard cryptographic public key.
-
-Biometric availability depends on the user's device and browser. Supported on Chrome, Edge, Safari on devices with biometric hardware.
-
----
-
-## API Endpoints
-
-### Auth
-
-| Method | Path | Auth required | Description |
-|--------|------|--------------|-------------|
-| POST | /api/auth/register | No | Register a new user |
-| POST | /api/auth/send-otp | No | Send login OTP to existing user |
-| POST | /api/auth/verify-otp | No | Verify OTP (registration or login) |
-| POST | /api/auth/resend-otp | No | Resend OTP (60-second cooldown) |
-| POST | /api/auth/logout | Yes | Revoke session |
-| GET | /api/auth/me | Yes | Get current user |
-
-### WebAuthn
-
-| Method | Path | Auth required | Description |
-|--------|------|--------------|-------------|
-| GET | /api/webauthn/registration-options | Yes | Get passkey registration challenge |
-| POST | /api/webauthn/verify-registration | Yes | Verify and store passkey |
-| POST | /api/webauthn/authentication-options | No | Get authentication challenge |
-| POST | /api/webauthn/verify-authentication | No | Verify biometric login |
-
-**Error codes:**
-- `400` — Validation error or bad request
+- `400` — Missing or invalid input
 - `401` — Not authenticated
+- `403` — Account exists but not yet verified
 - `404` — Account not found
 - `409` — Account already active on another device
 - `423` — Account locked
-- `429` — Rate limit exceeded
+- `429` — Too many requests
 
 ---
 
-## Testing
+## Running the tests
 
-### Running the backend tests
+There are no automated test files in this repo — the testing was done manually against a live server during development. Here's how to test each feature:
 
-The project includes manual API tests verified against a live server. To run them:
+**Registration**
+- Fill the form and submit. The OTP panel should appear with the code.
+- Try submitting with a missing field — the page should show an inline error.
+- Try registering with the same email twice — the second attempt should fail with a 409.
 
-```bash
-# Start the server
-cd server && npm run dev
+**OTP login**
+- Sign in with a registered email. Enter the code from the demo panel.
+- Enter a wrong code — it should tell you how many attempts remain.
 
-# In a separate terminal, run the test script
-# (or test manually with curl / Postman using the endpoint docs above)
-```
+**Account lockout**
+- Enter the wrong OTP 5 times. The account should lock and you should be redirected to the locked screen with a countdown.
 
-**Test checklist verified:**
+**Single active device**
+- Sign in on one browser. Open a private window and try to sign in with the same account — it should block you with a "already active on another device" message.
+- Sign out from the first browser. The second login should now work.
 
-| Test | Status |
-|------|--------|
-| Registration — missing fields | ✅ PASS |
-| Registration — invalid email | ✅ PASS |
-| Registration — success (with demoOtp) | ✅ PASS |
-| Registration — duplicate rejected (409) | ✅ PASS |
-| OTP verification — wrong OTP rejected | ✅ PASS |
-| OTP verification — correct OTP accepted | ✅ PASS |
-| OTP verification — reuse rejected | ✅ PASS |
-| Single device — second login blocked (409) | ✅ PASS |
-| Protected route — accessible with valid session | ✅ PASS |
-| Logout — session revoked | ✅ PASS |
-| Protected route — rejected after logout (401) | ✅ PASS |
-| OTP login — OTP sent after logout | ✅ PASS |
-| OTP login — correct OTP creates session | ✅ PASS |
-| Account lockout — locked after 5 failures (423) | ✅ PASS |
-| Health endpoint | ✅ PASS |
-
-### Testing in the browser
-
-1. Open `http://localhost:5173`
-2. Click **Create account**, fill the form
-3. The OTP appears in the yellow demo panel
-4. Enter the code — you are redirected to the dashboard
-5. Sign out, then sign in again with the OTP flow
-6. Test the **Account Locked** screen by entering the wrong OTP 5 times
-7. Test **Single device**: sign in, then open a private window and try to sign in with the same account — you will see the "already active" message
-8. Test **Passkey registration** from the dashboard (requires a device with biometric hardware)
+**Biometric login**
+- Sign in with OTP, then register a passkey from the dashboard (requires a device with Face ID or fingerprint hardware).
+- Sign out, then choose "Use Face ID / Fingerprint" from the login screen.
 
 ---
 
-## Known Limitations
+## Known limitations
 
-1. **Biometric hardware required** — WebAuthn passkey registration and authentication require a device with Face ID, fingerprint, or a hardware security key. Chrome or Edge on Windows/macOS/Android are well-supported. Safari on iOS/macOS is also supported.
+**Biometric hardware required** — WebAuthn passkeys need a device with built-in biometrics (Face ID, Windows Hello, Android fingerprint) or a hardware security key. The feature is fully implemented but won't work on devices that don't have this hardware.
 
-2. **SMS not configured by default** — SMS delivery via Twilio requires installing the `twilio` package and providing credentials. Demo mode works without it.
+**SMS not wired by default** — Phone number login works, but SMS delivery requires a Twilio account and credentials. Demo mode works fine without it.
 
-3. **Email requires Gmail App Password** — Standard Gmail passwords will not work. An App Password is required (see Email Configuration above).
+**Email requires an App Password** — Standard Gmail passwords are blocked by Google. You need to enable 2FA on the account and generate an App Password.
 
-4. **Single device does not auto-expire** — If a user's device crashes or the browser is closed without logging out, the session remains active in the database until it expires (7 days) or the user logs in again via OTP from a fresh flow. A session TTL index on MongoDB could be added to handle this automatically.
-
-5. **WebAuthn origin must match** — The `RP_ORIGIN` in `.env` must exactly match the URL in the browser including protocol and port. `http://localhost:5173` and `http://127.0.0.1:5173` are treated as different origins.
+**Session doesn't auto-expire on network failure** — If a device loses connection without logging out, the session stays active in the database until it naturally expires (7 days) or the user logs in again via OTP from a fresh flow.
 
 ---
 
-## Implementation Decisions (for evaluation discussion)
+## Why I made certain decisions
 
-**Why OTP instead of passwords?**
-Passwordless authentication is simpler for users and eliminates password-related attacks (reuse, brute force, credential stuffing). OTPs are single-use and time-limited.
+**OTP instead of passwords** — Passwordless auth is simpler for users and removes whole categories of risk (password reuse, weak passwords, credential stuffing). Time-limited single-use codes are genuinely more secure for many use cases.
 
-**Why bcrypt for OTP hashing?**
-OTPs are short (6 digits, 1 million possible values). Without hashing, a database breach would expose all pending OTPs. bcrypt is the established standard for one-way hashing with a configurable work factor.
+**bcrypt for OTP hashing** — OTPs only have a million possible values. Without hashing, a database breach would expose every pending code. bcrypt makes them practically useless even if the hash is stolen.
 
-**Why HTTP-only cookies instead of localStorage?**
-Tokens in localStorage are accessible to JavaScript, making them vulnerable to XSS attacks. HTTP-only cookies cannot be read by JavaScript and are sent automatically with every request.
+**HTTP-only cookies instead of localStorage** — Tokens in localStorage are readable by JavaScript, which makes them vulnerable to XSS. HTTP-only cookies can't be accessed by scripts at all.
 
-**Why store sessionId in the JWT AND in the database?**
-The JWT alone cannot be revoked without a denylist. By storing the current `activeSessionId` on the user record and comparing it on every request, we can invalidate sessions instantly on logout or when a new device logs in.
+**Rejecting the second device rather than replacing the session** — Silently kicking someone off their active session could be used by an attacker who managed to get an OTP. The safer default is to block the new login and let the legitimate user stay in control.
 
-**Why reject the second device instead of replacing the session?**
-The assignment explicitly requires this behaviour. It is also the safer default — silently replacing sessions could allow an attacker who obtained an OTP to kick a legitimate user off their device.
-
-**Why @simplewebauthn?**
-It is the most widely adopted WebAuthn library for Node.js, actively maintained, and handles the complex cryptographic verification correctly. Building this from scratch would introduce security risks.
-
-**Why separate rate limiters for send-otp and verify-otp?**
-The verify-otp endpoint is what attackers would target to brute-force OTPs. Using a tighter, separate rate limiter on that endpoint ensures the per-user lockout (5 attempts) is reached before the IP rate limit interferes with legitimate use.
+**updateOne with $set for OTP writes** — Rather than loading a document and calling save(), I use atomic partial updates. This avoids Mongoose running full-document validation on fields that the OTP flow doesn't touch, and it's also safer under concurrent requests.
