@@ -9,6 +9,8 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    // Local development proxy — forwards /api calls to the local backend.
+    // In production, VITE_API_URL is set so this proxy is not used.
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
@@ -16,5 +18,4 @@ export default defineConfig({
       },
     },
   },
-
 })
