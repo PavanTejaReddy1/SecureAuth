@@ -1,32 +1,25 @@
-// A single labelled text input with optional error message
-// Uses Tailwind for all styling — no custom CSS classes
 export default function Input({ label, error, className = '', ...props }) {
-  const baseClasses = [
-    'w-full px-4 py-3 rounded-xl text-sm text-slate-100',
-    'bg-white/[0.04] border',
-    'placeholder:text-slate-500',
+  const base = [
+    'w-full px-4 py-3 rounded-xl text-sm text-gray-900',
+    'bg-white border',
+    'placeholder:text-gray-400',
     'outline-none transition duration-150',
-    'hover:bg-white/[0.06] hover:border-white/20',
-    'focus:bg-blue-500/[0.05] focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15',
-  ];
+    'hover:border-gray-400',
+    'focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10',
+  ].join(' ');
 
-  const errorClasses = error
-    ? 'border-red-500/60 bg-red-500/[0.03] focus:border-red-500/60 focus:ring-red-500/10'
-    : 'border-white/10';
+  const borderColor = error ? 'border-red-400 focus:border-red-500 focus:ring-red-500/10' : 'border-gray-300';
 
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
           {label}
         </label>
       )}
-      <input
-        className={`${baseClasses.join(' ')} ${errorClasses} ${className}`}
-        {...props}
-      />
+      <input className={`${base} ${borderColor} ${className}`} {...props} />
       {error && (
-        <p className="text-xs text-red-400 flex items-center gap-1 mt-0.5">
+        <p className="text-xs text-red-500 flex items-center gap-1 mt-0.5">
           <span>⚠</span> {error}
         </p>
       )}

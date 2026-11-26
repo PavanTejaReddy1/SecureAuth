@@ -5,8 +5,6 @@ import { ShieldAlert, Clock } from 'lucide-react';
 
 export default function LockedPage() {
   const location = useLocation();
-
-  // The server passes the unlock time when redirecting here
   const { unlockAt } = location.state || {};
 
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -33,69 +31,67 @@ export default function LockedPage() {
   const isUnlocked = secondsLeft === 0 && unlockAt;
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md animate-fade-up">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm animate-fade-up">
 
         <div className="flex justify-center mb-8">
           <Link to="/"><Logo size="md" /></Link>
         </div>
 
-        <div className="p-8 rounded-2xl bg-white/[0.03] border border-white/[0.07] text-center">
+        <div className="p-8 rounded-2xl bg-white border border-gray-200 text-center">
 
-          {/* Icon */}
-          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-            <ShieldAlert size={30} className="text-red-400" />
+          <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center">
+            <ShieldAlert size={26} className="text-red-500" />
           </div>
 
-          <h1 className="text-2xl font-bold text-white mb-2">Account locked</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Account locked</h1>
 
-          <p className="text-sm text-slate-400 leading-relaxed mb-6">
-            Too many failed verification attempts. Your account has been locked for{' '}
-            <span className="text-white font-medium">1 hour</span> as a security measure.
+          <p className="text-sm text-gray-500 leading-relaxed mb-6">
+            Too many failed attempts. Your account has been locked for{' '}
+            <span className="text-gray-900 font-semibold">1 hour</span>.
           </p>
 
           {/* Countdown */}
           {unlockAt && !isUnlocked && (
-            <div className="p-5 rounded-xl bg-red-500/[0.07] border border-red-500/15 mb-6">
-              <div className="flex items-center justify-center gap-2 text-slate-400 text-xs mb-2">
-                <Clock size={13} />
+            <div className="p-5 rounded-xl bg-gray-50 border border-gray-200 mb-6">
+              <div className="flex items-center justify-center gap-1.5 text-gray-400 text-xs mb-2">
+                <Clock size={12} />
                 Time remaining
               </div>
-              <p className="text-4xl font-mono font-bold text-red-400 tracking-widest">
+              <p className="text-4xl font-mono font-bold text-gray-900 tracking-widest">
                 {formatTime(secondsLeft)}
               </p>
             </div>
           )}
 
-          {/* Unlocked state */}
+          {/* Unlocked */}
           {isUnlocked && (
-            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 mb-6">
-              <p className="text-sm text-green-400 font-medium">
+            <div className="p-4 rounded-xl bg-green-50 border border-green-200 mb-6">
+              <p className="text-sm text-green-700 font-medium">
                 ✓ Your account is now unlocked. You can try signing in again.
               </p>
             </div>
           )}
 
-          {/* Security tip */}
-          <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-left mb-6">
-            <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Security notice</p>
-            <p className="text-xs text-slate-500 leading-relaxed">
+          {/* Security notice */}
+          <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-left mb-6">
+            <p className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Security notice</p>
+            <p className="text-xs text-gray-400 leading-relaxed">
               If you did not make these attempts, someone may be trying to access your account.
-              Contact support if you need immediate assistance.
             </p>
           </div>
 
           {isUnlocked ? (
             <Link
               to="/login"
-              className="flex items-center justify-center w-full px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm rounded-xl transition-all"
+              className="flex items-center justify-center w-full px-6 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-semibold text-sm rounded-xl transition-colors"
             >
               Try signing in again
             </Link>
           ) : (
             <Link
               to="/"
-              className="flex items-center justify-center w-full px-6 py-3.5 bg-white/5 border border-white/10 text-slate-300 font-medium text-sm rounded-xl hover:bg-white/8 transition-all"
+              className="flex items-center justify-center w-full px-6 py-3.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-medium text-sm rounded-xl transition-colors"
             >
               Return to home
             </Link>

@@ -1,4 +1,3 @@
-// Reusable button with primary and secondary variants + loading state
 export default function Button({
   children,
   variant = 'primary',
@@ -6,13 +5,13 @@ export default function Button({
   className = '',
   ...props
 }) {
-  const base = 'w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed';
+  const base = 'w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-500/35 hover:-translate-y-px',
-    secondary: 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-slate-200 hover:-translate-y-px',
-    ghost: 'bg-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200',
-    danger: 'bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 hover:text-red-300',
+    primary:   'bg-gray-900 hover:bg-gray-800 active:bg-black text-white',
+    secondary: 'bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-800',
+    ghost:     'bg-transparent hover:bg-gray-100 text-gray-500 hover:text-gray-900',
+    danger:    'bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700',
   };
 
   return (
@@ -23,7 +22,7 @@ export default function Button({
     >
       {loading ? (
         <>
-          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <span className="w-4 h-4 border-2 border-gray-400 border-t-gray-800 rounded-full animate-spin" />
           <span>Please wait...</span>
         </>
       ) : (

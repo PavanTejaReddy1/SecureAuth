@@ -1,16 +1,15 @@
-// SecureAuth brand logo — shield icon + wordmark
 export default function Logo({ size = 'md' }) {
   const sizes = {
-    sm: { icon: 28, text: 'text-lg' },
-    md: { icon: 36, text: 'text-xl' },
-    lg: { icon: 44, text: 'text-2xl' },
+    sm: { icon: 26, text: 'text-base' },
+    md: { icon: 32, text: 'text-lg' },
+    lg: { icon: 40, text: 'text-xl' },
   };
 
   const { icon, text } = sizes[size] || sizes.md;
 
   return (
-    <div className="flex items-center gap-3">
-      {/* Shield icon */}
+    <div className="flex items-center gap-2.5">
+      {/* Shield icon — black fill, white checkmark */}
       <svg
         width={icon}
         height={icon}
@@ -18,15 +17,9 @@ export default function Logo({ size = 'md' }) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <defs>
-          <linearGradient id="shield-gradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#3b82f6" />
-            <stop offset="100%" stopColor="#6366f1" />
-          </linearGradient>
-        </defs>
         <path
           d="M18 3 L31 8.5 V18 C31 25.2 25.3 31.5 18 34 C10.7 31.5 5 25.2 5 18 V8.5 Z"
-          fill="url(#shield-gradient)"
+          fill="#111111"
         />
         <path
           d="M12 18 L16 22 L24 14"
@@ -38,8 +31,8 @@ export default function Logo({ size = 'md' }) {
       </svg>
 
       {/* Wordmark */}
-      <span className={`${text} font-bold tracking-tight text-white`}>
-        Secure<span className="text-blue-400">Auth</span>
+      <span className={`${text} font-bold tracking-tight text-gray-900`}>
+        SecureAuth
       </span>
     </div>
   );

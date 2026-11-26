@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
-/* ─── Custom font stacks ─────────────────────────────────────── */
+/* ─── Font stacks ───────────────────────────────────────────── */
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
-/* ─── Base reset ─────────────────────────────────────────────── */
+/* ─── Base ──────────────────────────────────────────────────── */
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -14,8 +14,8 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: #0a0f1e;
-  color: #f1f5f9;
+  background-color: #ffffff;
+  color: #111111;
   min-height: 100vh;
 }
 
@@ -23,17 +23,18 @@ body {
   min-height: 100vh;
 }
 
-/* ─── Scrollbar ──────────────────────────────────────────────── */
+/* ─── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #d1d1d1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #aaaaaa; }
 
-/* ─── Selection ──────────────────────────────────────────────── */
-::selection { background: rgba(59,130,246,0.3); color: #fff; }
+/* ─── Selection ─────────────────────────────────────────────── */
+::selection { background: #111111; color: #ffffff; }
 
-/* ─── Keyframes used by Tailwind animate- utilities ─────────── */
+/* ─── Keyframes ─────────────────────────────────────────────── */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -43,21 +44,9 @@ body {
   75%       { transform: translateX(5px); }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+/* ─── Utility classes ───────────────────────────────────────── */
 
-/* ─── Three utility classes that need CSS variables or tricks ── */
-
-/* Gradient brand text — Tailwind 4 bg-clip-text needs this for multi-stop */
-.brand-gradient {
-  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 50%, #38bdf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* OTP digit box — focus glow that Tailwind ring can't do with scale together */
+/* OTP digit box */
 .otp-box {
   width: 52px;
   height: 60px;
@@ -65,33 +54,35 @@ body {
   font-family: var(--font-mono);
   font-size: 1.5rem;
   font-weight: 600;
-  background: rgba(255,255,255,0.04);
-  border: 1.5px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  color: #f1f5f9;
+  background: #f5f5f5;
+  border: 1.5px solid #d4d4d4;
+  border-radius: 10px;
+  color: #111111;
   outline: none;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.15s;
-  caret-color: #3b82f6;
+  caret-color: #111111;
 }
 
 .otp-box:focus {
-  border-color: rgba(59,130,246,0.75);
-  background: rgba(59,130,246,0.07);
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  border-color: #111111;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
   transform: scale(1.05);
 }
 
 .otp-box.filled {
-  border-color: rgba(59,130,246,0.5);
-  color: #93c5fd;
+  border-color: #111111;
+  background: #f0f0f0;
+  color: #111111;
 }
 
 .otp-box.error {
-  border-color: rgba(239,68,68,0.7);
+  border-color: #ef4444;
+  background: #fff5f5;
   animation: shake 0.3s ease;
 }
 
-/* Animate fade-up for page entry */
+/* Page entry animation */
 .animate-fade-up {
-  animation: fade-up 0.4s ease both;
+  animation: fade-up 0.35s ease both;
 }

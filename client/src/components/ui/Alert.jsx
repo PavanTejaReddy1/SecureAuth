@@ -1,12 +1,11 @@
-// Inline alert for success, error, and info messages
 export default function Alert({ type = 'error', message }) {
   if (!message) return null;
 
   const styles = {
-    error:   'bg-red-500/10 border-red-500/25 text-red-400',
-    success: 'bg-green-500/10 border-green-500/25 text-green-400',
-    info:    'bg-blue-500/10 border-blue-500/25 text-blue-400',
-    warning: 'bg-amber-500/10 border-amber-500/25 text-amber-400',
+    error:   'bg-red-50 border-red-200 text-red-700',
+    success: 'bg-green-50 border-green-200 text-green-700',
+    info:    'bg-gray-50 border-gray-200 text-gray-700',
+    warning: 'bg-amber-50 border-amber-200 text-amber-700',
   };
 
   const icons = {

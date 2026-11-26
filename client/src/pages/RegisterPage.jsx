@@ -10,40 +10,28 @@ import { authService } from '../services/api';
 export default function RegisterPage() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    surname: '',
-    identifier: '',  // email or phone
-    dob: '',
-  });
-
+  const [form, setForm] = useState({ surname: '', identifier: '', dob: '' });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
 
   function handleChange(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
-    // Clear that field's error as the user types
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
     setServerError('');
   }
 
   function validate() {
     const newErrors = {};
-
     if (!isValidSurname(form.surname)) {
       newErrors.surname = 'Please enter a valid surname (2–50 characters, letters only).';
     }
-
     if (!getIdentifierType(form.identifier)) {
       newErrors.identifier = 'Please enter a valid email address or phone number.';
     }
-
     if (!isValidDOB(form.dob)) {
       newErrors.dob = 'Please enter a valid date of birth. You must be at least 13 years old.';
     }
-
     return newErrors;
   }
 
@@ -61,7 +49,6 @@ export default function RegisterPage() {
 
     try {
       const identifierType = getIdentifierType(form.identifier);
-
       await authService.register({
         surname: form.surname.trim(),
         [identifierType]: form.identifier.trim(),
@@ -83,18 +70,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm animate-fade-up">
 
         <div className="flex justify-center mb-8">
           <Link to="/"><Logo size="md" /></Link>
         </div>
 
-        <div className="p-8 rounded-2xl bg-white/[0.03] border border-white/[0.07]">
+        <div className="p-8 rounded-2xl bg-white border border-gray-200">
 
           <div className="mb-6">
-            <h1 className="text-xl font-bold text-white mb-1">Create your account</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-xl font-bold text-gray-900 mb-1">Create your account</h1>
+            <p className="text-sm text-gray-500">
               We'll send a verification code to confirm your contact.
             </p>
           </div>
@@ -141,9 +128,9 @@ export default function RegisterPage() {
 
           </form>
 
-          <p className="text-center text-sm text-slate-500 mt-6">
+          <p className="text-center text-sm text-gray-500 mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+            <Link to="/login" className="text-gray-900 font-semibold hover:underline transition-colors">
               Sign in
             </Link>
           </p>
